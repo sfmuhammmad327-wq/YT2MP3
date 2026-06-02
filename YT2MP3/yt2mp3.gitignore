@@ -1,0 +1,12 @@
+# Ignore downloaded MP3s and raw streams
+temp_downloads/
+*.mp3
+*_raw
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+# Ignore environment variables and local tokens
+tokens.json
+.env
