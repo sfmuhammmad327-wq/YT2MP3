@@ -1,1 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YT to MP3 | NextGen Converter</title>
+    <link rel="icon" type="x-icon" href="source/yt2mp3.ico">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap');
 
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+        body {
+            width: 100vw; height: 100vh; margin: 0;
+            background: linear-gradient(135deg, #070514, #120a2b, #09071c); 
+            color: #fff; display: flex; align-items: center;
+            justify-content: center; overflow: hidden; position: relative;
+        }
+
+        #bg-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            overflow: hidden; z-index: 0; pointer-events: none;
+        }
+        .bg-marquee-wrapper {
+            position: absolute; top: -50vh; left: -50vw; width: 200vw; height: 200vh;
+            display: flex; flex-direction: column; justify-content: space-evenly; transform: rotate(-12deg);
+        }
+        .bg-marquee-row {
+            display: flex; width: fit-content; animation: seamlessScroll 30s linear infinite;
+        }
+        .bg-marquee-row:nth-child(even) {
+            margin-left: -20vw; animation: seamlessScroll 35s linear infinite reverse;
+        }
+        .bg-marquee-row span {
+            font-size: 7vw; font-weight: 900; color: rgba(255, 255, 255, 0.02); margin-right: 4vw;
+        }
+        @keyframes seamlessScroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); } 
+        }
+
+        .blob {
+            position: absolute; width: 450px; height: 450px;
+            border-radius: 50%; filter: blur(90px); animation: float 10s ease-in-out infinite;
+        }
+        .blob.orb-1 {
+            top: -10%; left: -10%; background: linear-gradient(180deg, rgba(255, 0, 127, 0.25) 0%, rgba(112, 0, 255, 0.25) 100%);
+        }
+        .blob.orb-2 {
+            bottom: -10%; right: -10%; background: linear-gradient(180deg, rgba(0, 210, 255, 0.25) 0%, rgba(112, 0, 255, 0.25) 100%);
+            animation-delay: 3s;
+        }
+        @keyframes float {
+            0% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(40px) scale(1.05); }
+            100% { transform: translateY(0) scale(1); }
+        }
+
+        .glow-wrapper { position: relative; width: 90%; max-width: 520px; z-index: 10; }
+        .glow-wrapper::before {
+            content: ''; position: absolute; inset: -4px; border-radius: 24px;
+            background: linear-gradient(90deg, #ff007f, #7000ff, #00d2ff, #7000ff, #ff007f);
+            background-size: 300% 100%; filter: blur(16px); z-index: -1; animation: glowLoop 6s linear infinite; opacity: 0.8;
+        }
+        @keyframes glowLoop { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
+
+        .container {
+            background: rgba(15, 12, 30, 0.85); backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 45px; text-align: center; width: 100%;
+        }
+
+        h1 {
+            font-weight: 800; font-size: 2.6rem; margin-bottom: 10px;
+            background: linear-gradient(to right, #ff007f, #7000ff, #00d2ff);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        p { color: #8e8e8e; font-size: 0.95rem; margin-bottom: 30px; }
+        .input-group { position: relative; margin-bottom: 25px; }
+        input {
+            width: 100%; padding: 18px 20px; border-radius: 12px; border: none;
+            background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 1rem;
+            outline: none; border: 2px solid transparent; transition: all 0.3s ease;
+        }
+        input:focus { border-color: #7000ff; background: rgba(0, 0, 0, 0.8); box-shadow: 0 0 15px rgba(112, 0, 255, 0.3); }
+
+        .quality-section { margin-bottom: 30px; text-align: left; }
+        .quality-label { font-size: 0.85rem; color: #8e8e8e; margin-bottom: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; display: block; }
+        .quality-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; background: rgba(0, 0, 0, 0.4); padding: 8px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.03); }
+        .quality-btn { background: transparent; border: none; color: #8e8e8e; padding: 12px 5px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+        .quality-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+        .quality-btn.active { background: linear-gradient(45deg, #7000ff, #00d2ff); color: #fff; box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3); }
+
+        button.main-btn {
+            width: 100%; padding: 16px; border: none; border-radius: 12px;
+            background: linear-gradient(90deg, #ff007f, #7000ff, #00d2ff, #7000ff);
+            background-size: 300% auto; color: white; font-size: 1.15rem; font-weight: 700; cursor: pointer; transition: 0.4s ease;
+        }
+        button.main-btn:hover { background-position: right center; transform: translateY(-2px); box-shadow: 0 12px 25px rgba(255, 0, 127, 0.3); }
+
+        .status-area { margin-top: 25px; display: none; flex-direction: column; align-items: center; width: 100%; }
+        
+        .progress-track {
+            width: 100%; height: 12px; background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px; overflow: hidden; margin-bottom: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .progress-fill {
+            height: 100%; width: 0%; border-radius: 10px;
+            background: linear-gradient(90deg, #ff007f, #00d2ff);
+            box-shadow: 0 0 15px #00d2ff; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .status-text { color: #00d2ff; font-weight: 600; margin-bottom: 5px; font-size: 0.95rem; }
+        .progress-percentage { color: #fff; font-weight: 800; font-size: 1.2rem; }
+
+        .video-title {
+            display: none; background: rgba(0, 0, 0, 0.6); padding: 15px;
+            border-radius: 10px; margin-top: 15px; font-size: 0.95rem; color: #fff;
+            width: 100%; border-left: 4px solid #ff007f; word-wrap: break-word; text-align: left;
+        }
+        .download-btn {
+            display: none; background: linear-gradient(45deg, #00d2ff, #7000ff);
+            color: #fff; margin-top: 20px; text-decoration: none; padding: 15px 30px;
+            border-radius: 10px; font-weight: 800; width: 100%; transition: 0.3s ease;
+        }
+        .download-btn:hover { box-shadow: 0 10px 20px rgba(0, 210, 255, 0.3); }
+        .copyright { margin-top: 35px; font-size: 0.75rem; color: rgba(255, 255, 255, 0.3); text-transform: uppercase; letter-spacing: 1.5px; }
+        
+        .server-reminder {
+            position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 0.85rem; color: rgba(255, 255, 255, 0.6); background: rgba(0, 0, 0, 0.5); padding: 8px 20px; border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); z-index: 10; white-space: nowrap;
+        }
+
+        /* --- NEW: FLOATING GITHUB BUTTON --- */
+        .github-link {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            width: 55px;
+            height: 55px;
+            background: rgba(15, 12, 30, 0.85);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .github-link:hover {
+            transform: translateY(-5px);
+            background: #fff;
+            color: #120a2b; 
+            box-shadow: 0 10px 25px rgba(255, 255, 255, 0.3);
+            border-color: #fff;
+        }
+
+        .github-link svg {
+            width: 30px;
+            height: 30px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="bg-layer">
+        <div class="bg-marquee-wrapper">
+            <div class="bg-marquee-row"><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span></div>
+            <div class="bg-marquee-row"><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span></div>
+            <div class="bg-marquee-row"><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span><span>YT2MP3</span></div>
+        </div>
+        <div class="blob orb-1"></div>
+        <div class="blob orb-2"></div>
+    </div>
+
+    <div class="glow-wrapper">
+        <div class="container">
+            <h1>YT to MP3</h1>
+            <p>Drop a link. Get the audio. No BS.</p>
+
+            <div class="input-group">
+                <input type="text" id="urlInput" placeholder="Paste YouTube link here..." autocomplete="off">
+            </div>
+
+            <div class="quality-section">
+                <span class="quality-label">Audio Quality</span>
+                <div class="quality-container">
+                    <button class="quality-btn" onclick="setQuality(this, '128')">128k<br>Low</button>
+                    <button class="quality-btn" onclick="setQuality(this, '192')">192k<br>Med</button>
+                    <button class="quality-btn" onclick="setQuality(this, '256')">256k<br>High</button>
+                    <button class="quality-btn active" onclick="setQuality(this, '320')">320k<br>Ultra</button>
+                </div>
+            </div>
+
+            <button id="convertBtn" class="main-btn" onclick="startConversion()">Convert Now</button>
+
+            <div class="status-area" id="statusArea">
+                <div class="status-text" id="statusText">Initiating Server Link...</div>
+                <div class="progress-track" id="progressTrack">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-percentage" id="progressPercentage">0%</div>
+                
+                <div class="video-title" id="videoTitle"></div>
+                <a href="#" class="download-btn" id="downloadBtn">Download MP3</a>
+            </div>
+
+            <div class="copyright">©2026 by Sai The Limit</div>
+        </div>
+    </div>
+
+    <div class="server-reminder">⚠️ Reminder: Run the yt2mp3.py backend script before converting!</div>
+
+    <a href="https://github.com/sfmuhammmad327-wq" target="_blank" class="github-link" title="Visit My GitHub Profile">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+        </svg>
+    </a>
+
+    <script>
+        let selectedBitrate = '320';
+        let authWarningTimeout = null; // NEW: Timer variable to prevent UI flashing
+
+        function setQuality(element, bitrate) {
+            document.querySelectorAll('.quality-btn').forEach(btn => btn.classList.remove('active'));
+            element.classList.add('active');
+            selectedBitrate = bitrate;
+        }
+
+        async function startConversion() {
+            const urlInput = document.getElementById('urlInput').value;
+            const statusArea = document.getElementById('statusArea');
+            const progressFill = document.getElementById('progressFill');
+            const progressPercentage = document.getElementById('progressPercentage');
+            const progressTrack = document.getElementById('progressTrack');
+            const statusText = document.getElementById('statusText');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const convertBtn = document.getElementById('convertBtn');
+            const videoTitleBox = document.getElementById('videoTitle');
+
+            if(!urlInput.includes('youtube.com/') && !urlInput.includes('youtu.be/')) {
+                alert('Please enter a valid YouTube URL!');
+                return;
+            }
+
+            // UI Reset
+            convertBtn.style.display = 'none';
+            statusArea.style.display = 'flex';
+            progressTrack.style.display = 'block';
+            progressPercentage.style.display = 'block';
+            downloadBtn.style.display = 'none';
+            videoTitleBox.style.display = 'none';
+            
+            progressFill.style.width = '0%';
+            progressPercentage.innerText = '0%';
+            statusText.innerText = `Connecting to server...`;
+            statusText.style.color = '#00d2ff';
+            
+            // Clear any old timers just in case
+            if (authWarningTimeout) clearTimeout(authWarningTimeout);
+            authWarningTimeout = null;
+
+            try {
+                const startResponse = await fetch('http://127.0.0.1:5000/convert', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: urlInput, bitrate: selectedBitrate })
+                });
+
+                if (!startResponse.ok) {
+                    const errData = await startResponse.json();
+                    throw new Error(errData.error || 'Connection failed.');
+                }
+
+                const { task_id } = await startResponse.json();
+
+                const pollInterval = setInterval(async () => {
+                    const statusResponse = await fetch(`http://127.0.0.1:5000/status/${task_id}`);
+                    const statusData = await statusResponse.json();
+
+                    if (statusData.status === 'error') {
+                        clearInterval(pollInterval);
+                        handleError(statusData.error);
+                        return;
+                    }
+
+                    progressFill.style.width = `${statusData.progress}%`;
+                    progressPercentage.innerText = `${statusData.progress}%`;
+
+                    // --- NEW LOGIC: The Debounce Timer ---
+                    if (statusData.status === 'authenticating') {
+                        // Only start the timer if it hasn't been started yet
+                        if (!authWarningTimeout) {
+                            authWarningTimeout = setTimeout(() => {
+                                statusText.innerText = `⚠️ Action Required: Check server terminal to approve login!`;
+                                statusText.style.color = '#ffaa00'; // Orange alert
+                            }, 5500); // Wait 5.5 seconds before flashing the warning
+                        }
+                    } else {
+                        // If the status changes to anything else, instantly cancel the timer
+                        if (authWarningTimeout) {
+                            clearTimeout(authWarningTimeout);
+                            authWarningTimeout = null;
+                        }
+
+                        if (statusData.status === 'downloading') {
+                            statusText.innerText = `Fetching data stream...`;
+                            statusText.style.color = '#00d2ff'; // Blue
+                        } else if (statusData.status === 'converting') {
+                            statusText.innerText = `Encoding format to MP3...`;
+                            statusText.style.color = '#ff007f'; // Pink
+                        }
+                    }
+
+                    if (statusData.status === 'completed') {
+                        clearInterval(pollInterval);
+                        
+                        progressTrack.style.display = 'none';
+                        progressPercentage.style.display = 'none';
+                        
+                        statusText.innerText = 'Success! File is ready.';
+                        statusText.style.color = '#92fe9d'; 
+                        
+                        videoTitleBox.innerText = `🎵 [${selectedBitrate}kbps] ${statusData.title}`;
+                        videoTitleBox.style.display = 'block';
+                        
+                        downloadBtn.href = `http://127.0.0.1:5000/download/${task_id}`;
+                        downloadBtn.download = statusData.filename;
+                        downloadBtn.style.display = 'inline-block';
+                        
+                        setTimeout(() => {
+                            convertBtn.style.display = 'block';
+                            convertBtn.innerText = 'Convert Another';
+                            document.getElementById('urlInput').value = '';
+                        }, 1000);
+                    }
+                }, 800);
+
+            } catch (error) {
+                handleError(error.message);
+            }
+
+            function handleError(msg) {
+                progressTrack.style.display = 'none';
+                progressPercentage.style.display = 'none';
+                statusText.innerText = msg;
+                statusText.style.color = '#ff007f';
+                
+                setTimeout(() => {
+                    convertBtn.style.display = 'block';
+                    convertBtn.innerText = 'Try Again';
+                }, 3000);
+            }
+        }
+    </script>
+</body>
+</html>
